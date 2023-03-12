@@ -11,31 +11,28 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.inspection import permutation_importance
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_classif
+from sklearn.ensemble import RandomForestClassifier
 
 ## Data Preprocessing
 XY = Tuple[np.ndarray, np.ndarray]
 Dataset = Tuple[XY, XY]
-LogRegParams = Union[XY, Tuple[np.ndarray]]
+RFParams = Union[XY, Tuple[np.ndarray]]
 XYList = List[XY]
 
-def get_model_parameters(model: LogisticRegression) -> LogRegParams:
-    """Returns the parameters of a scikit-learn LogisticRegression model."""
-    if model.fit_intercept:
-        params = [model.coef_, model.intercept_]
-    else:
-        params = [model.coef_,]
+def get_model_parameters(model: RandomForestClassifier) -> RFParams:
+    """Returns the parameters of a scikit-learn RandomForestClassifier model."""
+    params = [model.estimators_,model.n_classes_,model.n_features_,]
+    #print(params)
     return params
 
-
-def set_model_params(model: LogisticRegression, params: LogRegParams) -> LogisticRegression:
-    """Sets the parameters of a scikit-learnLogisticRegression model."""
-    model.coef_ = params[0]
-    if model.fit_intercept:
-        model.intercept_ = params[1]
+def set_model_params(model: RandomForestClassifier, params: RFParams) -> RandomForestClassifier:
+    """Sets the parameters of a scikit-learn RandomForestClassifier model."""
+    model.estimators_ = params[0]
+    model.n_classes_ = params[1]
+    model.n_features_ = params[2]
     return model
 
-
-def set_initial_params(model: LogisticRegression):
+def set_initial_params(model: RandomForestClassifier):
     """Sets initial parameters as zeros Required since model params are
     uninitialized until model.fit is called.
 
@@ -45,12 +42,10 @@ def set_initial_params(model: LogisticRegression):
     """
     n_classes = 3
     n_features = 8  # Number of features in dataset
+    model.n_classes_ = n_classes
+    model.n_features_ = n_features
     model.classes_ = np.array([i for i in range(3)])
-
-    model.coef_ = np.zeros((n_classes, n_features))
-    if model.fit_intercept:
-        model.intercept_ = np.zeros((n_classes,))
-
+    model.estimators_ = 10
 
 def load_data_client1() -> Dataset:
     ## Load Dataset
@@ -80,7 +75,7 @@ def load_data_client1() -> Dataset:
     x = df.drop('condition', axis=1)
     y = df.condition
 
-    ## Model
+    # Model
     lrr = LogisticRegression(penalty="l2",)
     lrr.fit(x, y)
     result = permutation_importance(lrr, x, y, n_repeats=3, random_state=0)
@@ -191,3 +186,4 @@ def partition(X: np.ndarray, y: np.ndarray, num_partitions: int) -> XYList:
     return list(
         zip(np.array_split(X, num_partitions), np.array_split(y, num_partitions))
     )
+
